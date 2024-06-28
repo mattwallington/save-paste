@@ -1,0 +1,60 @@
+#!/bin/bash
+
+# Check if a file path is provided
+if [ -z "$1" ]; then
+  echo "Usage: $0 <file_path> [--dry-run]"
+  exit 1
+fi
+
+# Check for the --dry-run argument
+dry_run=false
+if [[ "$2" == "--dry-run" ]]; then
+  dry_run=true
+fi
+
+# File to save the clipboard contents
+output_file="$1"
+
+# Function to save clipboard contents
+save_clipboard() {
+  pbpaste > "$output_file"
+}
+
+# Function to get clipboard contents
+get_clipboard_contents() {
+  pbpaste
+}
+
+# Function to get the current timestamp in Pacific Time
+get_timestamp() {
+  TZ="America/Los_Angeles" date +"%Y-%m-%dT%H:%M:%S%z"
+}
+
+# Check if the file already exists
+if [ -f "$output_file" ]; then
+  # Get the current timestamp
+  timestamp=$(get_timestamp)
+
+  # Create a hidden backup file with the timestamp
+  backup_file="$(dirname "$output_file")/.${timestamp}-$(basename "$output_file")"
+  if [ "$dry_run" = true ]; then
+    echo "Dry run: Backup would be created at $backup_file"
+  else
+    cp "$output_file" "$backup_file"
+    echo "Backup created at $backup_file"
+  fi
+fi
+
+# Get clipboard contents
+clipboard_contents=$(get_clipboard_contents)
+line_count=$(echo "$clipboard_contents" | wc -l)
+
+if [ "$dry_run" = true ]; then
+  echo "Dry run: Clipboard contents would be saved to $output_file"
+  echo "Dry run: Number of lines to be saved: $line_count"
+else
+  # Save clipboard contents to the file, overwriting previous contents
+  echo "$clipboard_contents" > "$output_file"
+  echo "Clipboard contents saved to $output_file"
+  echo "Number of lines saved: $line_count"
+fi
